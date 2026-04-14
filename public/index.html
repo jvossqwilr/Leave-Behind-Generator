@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Qwilr — Leave-Behind Generator</title>
+  <style>
+    :root {
+      --teal: #1DB8A0;
+      --teal-dark: #17a08c;
+      --teal-light: #E8F8F5;
+      --navy: #1A3A4A;
+      --navy-light: #EEF2F4;
+      --coral: #F25C6E;
+      --coral-light: #FEF0F2;
+      --text: #1A3A4A;
+      --text-muted: #6B8899;
+      --border: #E2EBF0;
+      --bg: #F7FAFB;
+      --white: #ffffff;
+      --radius: 10px;
+      --shadow: 0 2px 12px rgba(26,58,74,0.07);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+    header {
+      background: var(--white);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 32px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    .logo-mark {
+      width: 32px; height: 32px;
+      background: linear-gradient(135deg, #1DB8A0 40%, #F25C6E 100%);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 800; color: white; font-size: 16px; letter-spacing: -1px;
+    }
+    header .brand { font-size: 15px; font-weight: 600; color: var(--navy); }
+    header .brand span { font-weight: 400; color: var(--text-muted); }
+
+    .container { max-width: 760px; margin: 0 auto; padding: 40px 24px 80px; }
+
+    h1 { font-size: 24px; font-weight: 700; color: var(--navy); margin-bottom: 6px; }
+    .subtitle { font-size: 14px; color: var(--text-muted); margin-bottom: 32px; line-height: 1.5; }
+
+    .card {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px 24px;
+      margin-bottom: 16px;
+      box-shadow: var(--shadow);
+    }
+    .card-title {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .card-title .hint { font-weight: 400; text-transform: none; letter-spacing: 0; font-size: 11px; color: #b0c4ce; }
+
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .field label { display: block; font-size: 13px; font-weight: 500; color: var(--navy); margin-bottom: 5px; }
+    .field input, .field select, .field textarea {
+      width: 100%;
+      padding: 9px 12px;
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      font-size: 14px;
+      color: var(--text);
+      background: var(--white);
+      outline: none;
+      transition: border-color 0.15s;
+      font-family: inherit;
+    }
+    .field input:focus, .field select:focus, .field textarea:focus { border-color: var(--teal); box-shadow: 0 0 0 3px rgba(29,184,160,0.1); }
+    .field textarea { resize: vertical; line-height: 1.5; }
+
+    .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+    .chip {
+      padding: 6px 14px;
+      border-radius: 20px;
+      border: 1px solid var(--border);
+      font-size: 13px;
+      cursor: pointer;
+      color: var(--text-muted);
+      background: var(--white);
+      transition: all 0.15s;
+      user-select: none;
+      line-height: 1.4;
+    }
+    .chip:hover { border-color: var(--teal); color: var(--teal); background: var(--teal-light); }
+    .chip.selected-pain { background: var(--teal); border-color: var(--teal); color: #fff; }
+    .chip.selected-competitor { background: var(--coral); border-color: var(--coral); color: #fff; }
+    .chip.selected-priority { background: var(--navy); border-color: var(--navy); color: #fff; }
+
+    .generate-btn {
+      width: 100%;
+      padding: 14px;
+      border-radius: var(--radius);
+      border: none;
+      background: var(--teal);
+      color: #fff;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-top: 8px;
+      letter-spacing: 0.01em;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .generate-btn:hover:not(:disabled) { background: var(--teal-dark); transform: translateY(-1px); box-shadow: 0 6px 20px rgba(29,184,160,0.35); }
+    .generate-btn:disabled { background: #9dd4ca; cursor: not-allowed; transform: none; box-shadow: none; }
+
+    #status {
+      display: none;
+      margin-top: 20px;
+      padding: 14px 18px;
+      border-radius: var(--radius);
+      font-size: 14px;
+      align-items: center;
+      gap: 12px;
+    }
+    #status.loading { display: flex; background: var(--teal-light); color: var(--navy); border: 1px solid #b2e8df; }
+    #status.error { display: flex; background: var(--coral-light); color: #c0334a; border: 1px solid #f9b8c2; }
+
+    .spinner {
+      width: 16px; height: 16px;
+      border: 2px solid rgba(29,184,160,0.25);
+      border-top-color: var(--teal);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      flex-shrink: 0;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    #result { display: none; margin-top: 32px; }
+    .result-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+    }
+    #result h2 { font-size: 17px; font-weight: 600; color: var(--navy); }
+    .action-btns { display: flex; gap: 8px; }
+    .btn-secondary {
+      padding: 8px 16px;
+      background: var(--white);
+      color: var(--navy);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .btn-secondary:hover { border-color: var(--navy); }
+    .btn-primary {
+      padding: 8px 16px;
+      background: var(--navy);
+      color: #fff;
+      border: none;
+      border-radius: 7px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .btn-primary:hover { background: #0f2533; }
+
+    #preview-frame {
+      width: 100%;
+      height: 960px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: white;
+      box-shadow: var(--shadow);
+    }
+
+    .notion-hint {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: var(--text-muted);
+      background: var(--navy-light);
+      padding: 5px 11px;
+      border-radius: 20px;
+      margin-top: 12px;
+    }
+
+    @media (max-width: 580px) {
+      .grid-2 { grid-template-columns: 1fr; }
+      header { padding: 12px 16px; }
+      .container { padding: 24px 16px 60px; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo-mark">Q</div>
+  <div class="brand">Qwilr <span>/ Leave-Behind Generator</span></div>
+</header>
+
+<div class="container">
+  <h1>Generate a prospect leave-behind</h1>
+  <p class="subtitle">Select prospect context below — the tool pulls live G2 social proof, competitive signals, and your Notion content to generate a personalized, shareable document in seconds.</p>
+
+  <div class="card">
+    <div class="card-title">Prospect details</div>
+    <div class="grid-2">
+      <div class="field">
+        <label>Company name</label>
+        <input type="text" id="company" placeholder="Acme Corp" />
+      </div>
+      <div class="field">
+        <label>Contact name</label>
+        <input type="text" id="contact" placeholder="Jane Smith" />
+      </div>
+      <div class="field">
+        <label>Industry</label>
+        <select id="industry">
+          <option value="">Select industry</option>
+          <option>SaaS / Technology</option>
+          <option>Marketing / Agency</option>
+          <option>Professional Services</option>
+          <option>Financial Services</option>
+          <option>Healthcare</option>
+          <option>Manufacturing</option>
+          <option>Real Estate</option>
+          <option>Education</option>
+          <option>Other</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Company size</label>
+        <select id="companySize">
+          <option value="">Select size</option>
+          <option>1–10 employees</option>
+          <option>11–50 employees</option>
+          <option>51–200 employees</option>
+          <option>201–500 employees</option>
+          <option>500+ employees</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Currently using / evaluating <span class="hint">— select one</span></div>
+    <div class="chips" id="competitor-chips">
+      <div class="chip" data-group="competitor" data-value="PandaDoc">PandaDoc</div>
+      <div class="chip" data-group="competitor" data-value="Proposify">Proposify</div>
+      <div class="chip" data-group="competitor" data-value="Better Proposals">Better Proposals</div>
+      <div class="chip" data-group="competitor" data-value="Word / Google Docs">Word / Google Docs</div>
+      <div class="chip" data-group="competitor" data-value="No current tool">No current tool</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Pain points <span class="hint">— select all that apply</span></div>
+    <div class="chips" id="pain-chips">
+      <div class="chip" data-group="pain" data-value="Proposals take too long to build">Proposals take too long</div>
+      <div class="chip" data-group="pain" data-value="Proposals look unprofessional or inconsistent">Unprofessional / inconsistent output</div>
+      <div class="chip" data-group="pain" data-value="No visibility into whether prospects open proposals">No proposal visibility</div>
+      <div class="chip" data-group="pain" data-value="Manual back-and-forth on edits and approvals">Manual edit back-and-forth</div>
+      <div class="chip" data-group="pain" data-value="Poor CRM integration requiring duplicate data entry">Poor CRM integration</div>
+      <div class="chip" data-group="pain" data-value="Low team adoption of current tool">Low team adoption</div>
+      <div class="chip" data-group="pain" data-value="Can't collect payment or e-signatures in one place">No payment / e-sign in one place</div>
+      <div class="chip" data-group="pain" data-value="Static PDFs that can't be updated after sending">Static PDFs, can't update after send</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Top priorities <span class="hint">— pick up to 2</span></div>
+    <div class="chips" id="priority-chips">
+      <div class="chip" data-group="priority" data-value="Faster deal velocity">Faster deal velocity</div>
+      <div class="chip" data-group="priority" data-value="Better buyer experience">Better buyer experience</div>
+      <div class="chip" data-group="priority" data-value="Team efficiency and time savings">Team efficiency</div>
+      <div class="chip" data-group="priority" data-value="Brand consistency across proposals">Brand consistency</div>
+      <div class="chip" data-group="priority" data-value="Actionable buyer engagement insights">Buyer engagement insights</div>
+      <div class="chip" data-group="priority" data-value="Reducing tool sprawl">Reducing tool sprawl</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Rep notes <span class="hint">— optional context from discovery</span></div>
+    <div class="field">
+      <textarea id="repNotes" rows="3" placeholder="e.g. HubSpot shop, 3 reps sending proposals daily, biggest frustration is chasing signed docs..."></textarea>
+    </div>
+    <div class="notion-hint">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+      Pulls matching case studies, battle cards &amp; customer wins from Notion
+    </div>
+  </div>
+
+  <button class="generate-btn" id="generateBtn" onclick="generate()">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+    Generate leave-behind
+  </button>
+
+  <div id="status">
+    <div class="spinner"></div>
+    <span id="status-text">Pulling G2 reviews and Notion content...</span>
+  </div>
+
+  <div id="result">
+    <div class="result-header">
+      <h2>Leave-behind ready</h2>
+      <div class="action-btns">
+        <button class="btn-secondary" onclick="regenerate()">Regenerate</button>
+        <button class="btn-primary" onclick="downloadPDF()">Download PDF</button>
+      </div>
+    </div>
+    <iframe id="preview-frame" title="Leave-behind preview"></iframe>
+  </div>
+</div>
+
+<script>
+  const state = { competitor: null, pains: [], priorities: [] };
+
+  document.querySelectorAll('#competitor-chips .chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      document.querySelectorAll('#competitor-chips .chip').forEach(c => c.classList.remove('selected-competitor'));
+      if (state.competitor === chip.dataset.value) {
+        state.competitor = null;
+      } else {
+        chip.classList.add('selected-competitor');
+        state.competitor = chip.dataset.value;
+      }
+    });
+  });
+
+  document.querySelectorAll('#pain-chips .chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      const val = chip.dataset.value;
+      if (chip.classList.contains('selected-pain')) {
+        chip.classList.remove('selected-pain');
+        state.pains = state.pains.filter(p => p !== val);
+      } else {
+        chip.classList.add('selected-pain');
+        state.pains.push(val);
+      }
+    });
+  });
+
+  document.querySelectorAll('#priority-chips .chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      const val = chip.dataset.value;
+      if (chip.classList.contains('selected-priority')) {
+        chip.classList.remove('selected-priority');
+        state.priorities = state.priorities.filter(p => p !== val);
+      } else {
+        if (state.priorities.length >= 2) return;
+        chip.classList.add('selected-priority');
+        state.priorities.push(val);
+      }
+    });
+  });
+
+  let lastHTML = '';
+  let lastPayload = null;
+
+  async function generate() {
+    const company = document.getElementById('company').value.trim();
+    if (!company) { alert('Please enter a prospect company name.'); return; }
+
+    lastPayload = {
+      company,
+      contact: document.getElementById('contact').value.trim(),
+      industry: document.getElementById('industry').value,
+      companySize: document.getElementById('companySize').value,
+      competitor: state.competitor,
+      pains: [...state.pains],
+      priorities: [...state.priorities],
+      repNotes: document.getElementById('repNotes').value.trim(),
+    };
+
+    await runGenerate(lastPayload);
+  }
+
+  async function regenerate() {
+    if (!lastPayload) return;
+    await runGenerate(lastPayload);
+  }
+
+  async function runGenerate(payload) {
+    const btn = document.getElementById('generateBtn');
+    const statusEl = document.getElementById('status');
+    const statusText = document.getElementById('status-text');
+    const result = document.getElementById('result');
+
+    btn.disabled = true;
+    result.style.display = 'none';
+    statusEl.className = 'loading';
+    statusText.textContent = 'Scraping G2 reviews and competitive signals...';
+
+    const messages = [
+      'Scraping G2 reviews and competitive signals...',
+      'Pulling content from Notion...',
+      'Synthesizing your personalized leave-behind...',
+      'Finalising the document...',
+    ];
+    let i = 0;
+    const ticker = setInterval(() => { statusText.textContent = messages[++i % messages.length]; }, 2500);
+
+    try {
+      const res = await fetch('/api/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      clearInterval(ticker);
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: 'Unknown error' }));
+        throw new Error(err.error || `Server error ${res.status}`);
+      }
+
+      const data = await res.json();
+      lastHTML = data.html;
+
+      document.getElementById('preview-frame').srcdoc = lastHTML;
+      result.style.display = 'block';
+      statusEl.style.display = 'none';
+      result.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } catch (err) {
+      clearInterval(ticker);
+      statusEl.className = 'error';
+      statusText.textContent = 'Error: ' + err.message;
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  function downloadPDF() {
+    if (!lastHTML) return;
+    const win = window.open('', '_blank');
+    win.document.write(lastHTML);
+    win.document.close();
+    setTimeout(() => win.print(), 800);
+  }
+</script>
+</body>
+</html>

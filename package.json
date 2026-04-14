@@ -1,0 +1,17 @@
+{
+  "name": "qwilr-leave-behind",
+  "version": "1.0.0",
+  "description": "Qwilr personalized sales leave-behind generator",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vercel dev",
+    "deploy": "vercel --prod"
+  },
+  "dependencies": {
+    "groq-sdk": "^0.9.0"
+  },
+  "devDependencies": {
+    "vercel": "^37.0.0"
+  }
+}
